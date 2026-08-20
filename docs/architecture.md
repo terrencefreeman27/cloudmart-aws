@@ -4,19 +4,16 @@
 
 ## Current state (Phase 3 — VPC deployed)
 
-**The Phase 3 VPC now exists in AWS** (account `937485903165`, `us-east-1`), applied via `terraform apply` on 2026-08-20. No other AWS resources exist — no EC2, no NAT Gateway, no load balancer, no database.
+**The Phase 3 VPC now exists in AWS** (`us-east-1`), applied via `terraform apply` on 2026-08-20. No other AWS resources exist — no EC2, no NAT Gateway, no load balancer, no database.
 
 - **Phase 2 (local tooling + auth, no AWS resources):** AWS CLI v2 + Terraform 1.15 installed; authentication via AWS IAM Identity Center (SSO) — `aws sso login --profile cloudmart` — no long-lived IAM access keys. See [ADR 0004](decisions/0004-aws-authentication-via-iam-identity-center.md). A connectivity-check-only Terraform config at `infrastructure/terraform/` (zero `resource` blocks) confirms Terraform can reach the account.
-- **Phase 3 (deployed):** `infrastructure/terraform/modules/vpc/` (reusable module) called from `infrastructure/terraform/environments/dev/` created CloudMart's network foundation — 13 resources, `Apply complete! Resources: 13 added, 0 changed, 0 destroyed.` All free; **$0/month with nothing else attached.** Full layout, CIDR plan, and real resource IDs: [networking.md](networking.md). Design reasoning: [ADR 0005](decisions/0005-vpc-network-design.md).
+- **Phase 3 (deployed):** `infrastructure/terraform/modules/vpc/` (reusable module) called from `infrastructure/terraform/environments/dev/` created CloudMart's network foundation — 13 resources, `Apply complete! Resources: 13 added, 0 changed, 0 destroyed.` All free; **$0/month with nothing else attached.** Full layout and CIDR plan: [networking.md](networking.md). Design reasoning: [ADR 0005](decisions/0005-vpc-network-design.md).
 
-| Resource | ID |
-|---|---|
-| VPC | `vpc-0a82438460af02b05` |
-| Internet Gateway | `igw-0953cfd024cea3a2b` |
-| Public subnet (us-east-1a) | `subnet-04837a778fb2d3acf` |
-| Public subnet (us-east-1b) | `subnet-060de850a2e9e39b5` |
-| Private subnet (us-east-1a) | `subnet-05e43ab7674bd7594` |
-| Private subnet (us-east-1b) | `subnet-06dee9395e05c4ce8` |
+Real AWS resource IDs (VPC ID, subnet IDs, etc.) aren't hardcoded in this document — they're ephemeral (they change every time this environment is destroyed and recreated) and account-specific, so a static value here would go stale and adds no teaching value a reader can act on. Get the current ones anytime with:
+
+```bash
+cd infrastructure/terraform/environments/dev && terraform output
+```
 
 Terraform state for this environment lives in `infrastructure/terraform/environments/dev/terraform.tfstate` — local only, gitignored (never committed), since it can contain sensitive resource details. A remote backend is planned for Phase 11.
 
@@ -92,7 +89,7 @@ This diagram will be replaced with a real rendered diagram (see [../diagrams/REA
 | 0 — Scaffolding | ✅ Done | Repo structure, docs, license |
 | 1 — Local app | ✅ Done | React/Vite storefront + Express API running locally, no AWS |
 | 2 — AWS foundations | ✅ Done | AWS CLI + Terraform installed, IAM Identity Center (SSO) auth, connectivity-only Terraform bootstrap |
-| 3 — Networking | ✅ Deployed | VPC + 4 subnets + IGW + 3 route tables live in AWS (`vpc-0a82438460af02b05`), 13 resources, $0/month |
+| 3 — Networking | ✅ Deployed | VPC + 4 subnets + IGW + 3 route tables live in AWS, 13 resources, $0/month |
 | 4 — Compute | ⬜ Not started | |
 | 5 — Load balancing & ASG | ⬜ Not started | |
 | 6 — Database | ⬜ Not started | |

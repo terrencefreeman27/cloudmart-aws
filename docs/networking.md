@@ -1,20 +1,23 @@
 # Networking
 
-CloudMart's network foundation, built in Phase 3 via `infrastructure/terraform/modules/vpc/` (reusable module) and `infrastructure/terraform/environments/dev/` (the root config that calls it with real values). **Deployed to AWS** on 2026-08-20 (`terraform apply`, account `937485903165`, `us-east-1`) — `Apply complete! Resources: 13 added, 0 changed, 0 destroyed.` Independently verified via `aws ec2 describe-vpcs`/`describe-subnets`/`describe-internet-gateways`/`describe-route-tables`, not just Terraform's own output.
+CloudMart's network foundation, built in Phase 3 via `infrastructure/terraform/modules/vpc/` (reusable module) and `infrastructure/terraform/environments/dev/` (the root config that calls it with real values). **Deployed to AWS** on 2026-08-20 (`terraform apply`, `us-east-1`) — `Apply complete! Resources: 13 added, 0 changed, 0 destroyed.` Independently verified via `aws ec2 describe-vpcs`/`describe-subnets`/`describe-internet-gateways`/`describe-route-tables`, not just Terraform's own output.
 
-## Deployed resource IDs
+## Resource inventory
 
-| Resource | ID |
+| Resource | Count |
 |---|---|
-| VPC | `vpc-0a82438460af02b05` |
-| Internet Gateway | `igw-0953cfd024cea3a2b` |
-| Public subnet (us-east-1a) | `subnet-04837a778fb2d3acf` |
-| Public subnet (us-east-1b) | `subnet-060de850a2e9e39b5` |
-| Private subnet (us-east-1a) | `subnet-05e43ab7674bd7594` |
-| Private subnet (us-east-1b) | `subnet-06dee9395e05c4ce8` |
-| Public route table | `rtb-08f403594e70d14f6` |
-| Private route table (us-east-1a) | `rtb-0698ef93a0b5af115` |
-| Private route table (us-east-1b) | `rtb-0d2beaf2baabc584b` |
+| VPC | 1 |
+| Internet Gateway | 1 |
+| Public subnets (one per AZ) | 2 |
+| Private subnets (one per AZ) | 2 |
+| Public route table | 1 |
+| Private route tables (one per AZ) | 2 |
+
+Real AWS resource IDs (`vpc-...`, `subnet-...`, `rtb-...`) aren't published here — they're specific to this AWS account and this exact deployment, they change every time the environment is destroyed and recreated, and they don't add anything a reader could verify or reuse. The source of truth for current IDs is Terraform's own output, not a static doc:
+
+```bash
+cd infrastructure/terraform/environments/dev && terraform output
+```
 
 Note: the VPC also has a 4th route table AWS creates automatically for every VPC (its "main"/default route table) — that one isn't managed by Terraform, has no subnets explicitly associated with it, and isn't part of the 13 resources this project created.
 
