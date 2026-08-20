@@ -36,3 +36,7 @@ What does this make easier or harder later? Any cost/security/complexity trade-o
 | [0004](0004-aws-authentication-via-iam-identity-center.md) | AWS authentication via IAM Identity Center (SSO), not access keys |
 | [0005](0005-vpc-network-design.md) | VPC network design: per-AZ private route tables, no NAT Gateway yet |
 | [0006](0006-ec2-compute-placement-and-access.md) | EC2 compute placement: public subnet, SSM-only access, no inbound rules by default |
+| [0007](0007-phase5-alb-asg-plan-not-deployed.md) | Phase 5 ALB + Auto Scaling Group: designed and plan-validated, not deployed |
+| [0008](0008-phase6-rds-plan-not-deployed.md) | Phase 6 RDS PostgreSQL: designed and plan-validated, not deployed |
+| [0009](0009-phase7-static-site-plan-not-deployed.md) | Phase 7 S3 + CloudFront frontend hosting: designed and plan-validated, not deployed |
+| [0010](0010-phase8-operational-polish.md) | Phase 8 operational polish: monitoring scope, logging deferral, and a Terraform dependency-graph lesson |

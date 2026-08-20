@@ -46,8 +46,14 @@ variable "instance_type" {
   default     = "t2.micro"
 }
 
-variable "allowed_demo_cidrs" {
-  description = "CIDRs allowed to reach the backend app port directly. Empty by default — use SSM port forwarding for access instead. Only override via terraform.tfvars (gitignored) or -var; never commit a real IP."
-  type        = list(string)
-  default     = []
+variable "db_multi_az" {
+  description = "Enable Multi-AZ for the database (synchronous standby, automatic failover, roughly doubles RDS cost). False by default for cost control — see docs/decisions/0008. Only flip this with explicit approval to pay for it."
+  type        = bool
+  default     = false
+}
+
+variable "monitoring_notification_email" {
+  description = "Email to subscribe to the CloudWatch alarm SNS topic. Empty by default — no subscription is created. Never set a real value here; override via terraform.tfvars (gitignored) or -var only."
+  type        = string
+  default     = ""
 }

@@ -1,9 +1,15 @@
 # Architecture Diagrams
 
-Visual diagrams of the CloudMart architecture. Empty for now — the first real diagram gets added once the networking layer exists (Phase 3 of the [roadmap](../docs/ROADMAP.md)), and is updated as later phases add services.
+## `cloudmart-architecture.mmd` / `cloudmart-architecture.png`
 
-Likely tooling (decided when the first diagram is actually made, not now):
-- [draw.io / diagrams.net](https://app.diagrams.net/) with official AWS architecture icons — widely used, easy to export as PNG/SVG for the README.
-- Python [`diagrams`](https://diagrams.mingrammer.com/) package — diagram-as-code, nice for keeping the diagram in version control as text, at the cost of less layout control.
+The final CloudMart target architecture — diagram-as-code in [Mermaid](https://mermaid.js.org/), which GitHub renders natively in any Markdown file (including directly in [README.md](../README.md)). The `.png` is a rendered export of the same source, for anywhere Mermaid isn't supported (e.g. a resume PDF, LinkedIn).
 
-Whatever is chosen, both a source file (`.drawio` or `.py`) and an exported image (`.png`/`.svg`) will be committed, so the diagram is both viewable on GitHub and editable later.
+**Status is shown via label text, not color alone** — every node carries an explicit `[DEPLOYED]`, `[PLAN-VALIDATED]`, or `[VALIDATED, DESTROYED]` tag; color is a secondary visual aid on top of that, not the only signal. See [docs/architecture.md](../docs/architecture.md) for the prose version of the same information, and the individual ADRs in [docs/decisions/](../docs/decisions/) for the reasoning behind each status.
+
+**Regenerating the PNG after editing the `.mmd` source** (uses [`@mermaid-js/mermaid-cli`](https://github.com/mermaid-js/mermaid-cli), free/open-source, run via `npx` — no install, no paid dependency):
+```bash
+npx -y @mermaid-js/mermaid-cli \
+  -i diagrams/cloudmart-architecture.mmd \
+  -o diagrams/cloudmart-architecture.png \
+  -b white -w 1600
+```

@@ -15,9 +15,9 @@ This document explains how CloudMart handles growth and failure, and the reasoni
 - The database is the most likely bottleneck at scale; read replicas and connection pooling are discussed as future work rather than built, to keep cost and complexity proportional to a portfolio project.
 
 ## Fault tolerance
-*(Phase 5, 6, 10)*
-- ALB health checks remove unhealthy instances from rotation automatically; the ASG replaces them.
-- CloudWatch alarms (Phase 10) provide visibility into failures before they become outages.
+*(Phase 5, 6, 8)*
+- ALB health checks remove unhealthy instances from rotation automatically; the ASG replaces them. Full failure-scenario walkthrough (one instance down, one AZ down): [architecture.md](architecture.md) "Reliability."
+- CloudWatch alarms (Phase 8 — `modules/monitoring`, 1 active + 8 designed) provide visibility into failures before they become outages. See [ADR 0010](decisions/0010-phase8-operational-polish.md).
 - Infrastructure is fully defined in Terraform, so recovery from a bad deploy or a destroyed environment is "re-apply," not "rebuild by hand."
 
 ## Explicitly out of scope

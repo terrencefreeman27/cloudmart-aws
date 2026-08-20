@@ -14,11 +14,13 @@ private_subnet_cidrs  = ["10.0.11.0/24", "10.0.12.0/24"]
 
 instance_type = "t2.micro"
 
-# Leave commented out by default — no ingress rule is created at all when
-# this is empty/unset, which is the safe default (use SSM port forwarding
-# instead). Only uncomment locally in your OWN terraform.tfvars (this
-# .example file stays committed, terraform.tfvars does not) if you want
-# temporary direct access, and use YOUR real IP, not the placeholder below.
-# 203.0.113.0/24 shown here is IANA's reserved documentation range (RFC
-# 5737) — never a real address, safe to leave in a public repo.
-# allowed_demo_cidrs = ["203.0.113.7/32"]
+# false = Single-AZ (~$15.84/mo if deployed). true = Multi-AZ, synchronous
+# standby + automatic failover (~$31.28/mo if deployed) — only flip this
+# with explicit approval to pay for it. See docs/decisions/0008.
+db_multi_az = false
+
+# Leave blank by default — no SNS email subscription is created, alarms
+# still work (visible in the CloudWatch console) without one. Only set
+# this in your OWN terraform.tfvars (this .example file stays committed,
+# terraform.tfvars does not) — never commit a real email address here.
+# monitoring_notification_email = "you@example.com"

@@ -1,0 +1,64 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#f7f8fa', 'fontFamily': 'Helvetica'}}}%%
+%% CloudMart target production architecture.
+%% Status legend (label text is authoritative — color is a secondary cue only):
+%%   [DEPLOYED]              currently live in AWS
+%%   [VALIDATED, DESTROYED]  built and verified once, then torn down for cost control
+%%   [PLAN-VALIDATED]        fully designed + terraform plan-verified, never applied
+%% Regenerate PNG: npx -y @mermaid-js/mermaid-cli -i diagrams/cloudmart-architecture.mmd -o diagrams/cloudmart-architecture.png -b transparent
+
+flowchart TB
+    Users(["Users"])
+
+    Users -->|HTTPS| CF["CloudFront CDN<br/><b>[DEPLOYED]</b>"]
+    CF -->|"OAC — private,<br/>read-only origin access"| S3["S3 Bucket<br/>React Frontend<br/><b>[DEPLOYED]</b>"]
+
+    Users -.->|"HTTP — once Phase 5<br/>is deployed"| ALB
+
+    subgraph VPC["VPC · 10.0.0.0/16 · us-east-1"]
+        IGW(["Internet Gateway<br/><b>[DEPLOYED]</b>"])
+        ALB["Application Load Balancer<br/>spans 2 PUBLIC subnets (1/AZ)<br/><b>[PLAN-VALIDATED]</b>"]
+
+        subgraph AZA["Availability Zone A — PRIVATE subnet"]
+            EC2A["EC2 backend<br/>(ASG member)<br/><b>[PLAN-VALIDATED]</b>"]
+        end
+        subgraph AZB["Availability Zone B — PRIVATE subnet"]
+            EC2B["EC2 backend<br/>(ASG member)<br/><b>[PLAN-VALIDATED]</b>"]
+        end
+
+        ASG{{"Auto Scaling Group<br/>+ Launch Template<br/><b>[PLAN-VALIDATED]</b>"}}
+        RDS[("RDS PostgreSQL<br/>private subnets<br/><b>[PLAN-VALIDATED]</b>")]
+        P4["Phase 4 history:<br/>single EC2 instance<br/><b>[VALIDATED, DESTROYED]</b><br/>SSM-verified /api/health,<br/>/api/products — superseded<br/>by the ASG design above"]
+
+        IGW --> ALB
+        ALB -->|"SG: app port,<br/>ALB SG only"| EC2A
+        ALB -->|"SG: app port,<br/>ALB SG only"| EC2B
+        ASG -.manages.-> EC2A
+        ASG -.manages.-> EC2B
+        EC2A -->|"SG: DB port,<br/>backend SG only"| RDS
+        EC2B -->|"SG: DB port,<br/>backend SG only"| RDS
+        ASG -.superseded design.-> P4
+    end
+
+    subgraph OPS["Cross-cutting: administration & observability"]
+        SSM["SSM Session Manager<br/>no SSH, no open port"]
+        IAM["IAM least-privilege<br/>instance roles"]
+        SM["Secrets Manager<br/>DB credentials<br/><b>[PLAN-VALIDATED]</b>"]
+        CW["CloudWatch + SNS<br/>1 alarm <b>[PLAN-VALIDATED]</b><br/>8 more designed"]
+    end
+
+    EC2A -.admin via.-> SSM
+    EC2A -.assumes.-> IAM
+    RDS -.credentials via.-> SM
+    ALB -.monitored by.-> CW
+    RDS -.monitored by.-> CW
+    CF -.monitored by.-> CW
+
+    classDef deployed fill:#d4edda,stroke:#28a745,stroke-width:2px,color:#155724
+    classDef validated fill:#fff3cd,stroke:#fd7e14,stroke-width:2px,color:#7a4a00
+    classDef planned fill:#e9ecef,stroke:#6c757d,stroke-width:2px,color:#343a40,stroke-dasharray: 4 3
+    classDef ops fill:#e7f1ff,stroke:#4a7fd6,stroke-width:1px,color:#1a3a6b
+
+    class CF,S3,IGW deployed
+    class P4 validated
+    class ALB,EC2A,EC2B,ASG,RDS,SM,CW planned
+    class SSM,IAM ops

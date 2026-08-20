@@ -72,8 +72,8 @@ Both public subnets share one route table since they need an identical rule. Pri
 
 **Private subnets currently have no path to the internet at all** — this is intentional, not a bug. There's nothing in them yet that needs it. See [ADR 0005](decisions/0005-vpc-network-design.md) and [cost.md](cost.md) for the NAT Gateway trade-off.
 
-## What's NOT built yet
-- NAT Gateway (would give private subnets outbound internet — has an hourly cost, deferred until something in a private subnet actually needs it)
-- Security groups (Phase 4, once EC2 exists — a security group with nothing attached has no purpose)
-- Network ACLs (default NACL allows all traffic; a custom one is a possible Phase 9 hardening item, not required for a functioning VPC)
-- VPC Flow Logs (monitoring, Phase 10)
+## What's NOT built
+- NAT Gateway (would give private subnets outbound internet — has an hourly cost; not present anywhere in this project's Terraform, deliberately — see [docs/cost.md](cost.md))
+- Security groups (arrived with the compute that uses them — see [ADR 0006](decisions/0006-ec2-compute-placement-and-access.md))
+- Network ACLs (default NACL allows all traffic; a custom one is a real production-hardening item, deliberately not pursued — see [docs/security.md](security.md) "Production hardening checklist")
+- VPC Flow Logs (deliberately not enabled — see [docs/security.md](security.md), consistent with the Phase 8 decision not to enable logging without an active traffic/debugging need)
