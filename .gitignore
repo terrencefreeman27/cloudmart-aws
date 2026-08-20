@@ -1,0 +1,53 @@
+# ---- Secrets & environment files (NEVER commit these) ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*credentials*
+!**/README.md
+
+# ---- Terraform ----
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Keep the dependency lock file — it should be committed
+!.terraform.lock.hcl
+
+# ---- Node (frontend & backend) ----
+node_modules/
+dist/
+build/
+.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# ---- Logs ----
+*.log
+logs/
+
+# ---- Misc ----
+*.zip
+*.tar.gz
+.cache/

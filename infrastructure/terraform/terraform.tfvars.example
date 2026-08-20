@@ -1,0 +1,12 @@
+# Copy this file to terraform.tfvars to override the defaults in variables.tf.
+# terraform.tfvars is gitignored (see the repo root .gitignore) — this
+# .example file is committed so the expected shape is documented, but it
+# never contains real secrets. There are no AWS credentials in this file or
+# anywhere in this repo — authentication uses AWS IAM Identity Center (SSO)
+# temporary credentials via `aws sso login --profile cloudmart`, cached
+# outside this repo under ~/.aws/. See ../../docs/security.md and
+# ../../docs/decisions/0004-aws-authentication-via-iam-identity-center.md.
+
+aws_region  = "us-east-1"
+aws_profile = "cloudmart"
+project     = "cloudmart"
