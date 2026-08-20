@@ -21,3 +21,14 @@ module "vpc" {
   public_subnet_cidrs  = var.public_subnet_cidrs
   private_subnet_cidrs = var.private_subnet_cidrs
 }
+
+module "compute" {
+  source = "../../modules/compute"
+
+  project            = var.project
+  environment        = var.environment
+  vpc_id             = module.vpc.vpc_id
+  subnet_id          = module.vpc.public_subnet_ids[0]
+  instance_type      = var.instance_type
+  allowed_demo_cidrs = var.allowed_demo_cidrs
+}

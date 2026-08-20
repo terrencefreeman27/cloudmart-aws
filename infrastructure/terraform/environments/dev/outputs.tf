@@ -27,3 +27,18 @@ output "internet_gateway_id" {
   description = "ID of the Internet Gateway."
   value       = module.vpc.internet_gateway_id
 }
+
+output "backend_instance_id" {
+  description = "ID of the backend EC2 instance."
+  value       = module.compute.instance_id
+}
+
+output "backend_public_ip" {
+  description = "Public IP of the backend instance. Changes on every stop/start — no Elastic IP is used."
+  value       = module.compute.public_ip
+}
+
+output "backend_security_group_id" {
+  description = "ID of the backend security group."
+  value       = module.compute.security_group_id
+}

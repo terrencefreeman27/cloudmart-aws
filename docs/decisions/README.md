@@ -35,3 +35,4 @@ What does this make easier or harder later? Any cost/security/complexity trade-o
 | [0003](0003-tech-stack-selection.md) | Application tech stack selection |
 | [0004](0004-aws-authentication-via-iam-identity-center.md) | AWS authentication via IAM Identity Center (SSO), not access keys |
 | [0005](0005-vpc-network-design.md) | VPC network design: per-AZ private route tables, no NAT Gateway yet |
+| [0006](0006-ec2-compute-placement-and-access.md) | EC2 compute placement: public subnet, SSM-only access, no inbound rules by default |

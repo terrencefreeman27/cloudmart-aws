@@ -4,7 +4,7 @@
 
 The application itself is intentionally simple. The point of this project is the **infrastructure**: a highly available, secure, cost-aware AWS environment provisioned with Terraform, built up one AWS service at a time, with every decision documented and explained.
 
-> 🚧 **Status:** Phase 3 complete — VPC network (2 AZs, public/private subnets, Internet Gateway, route tables) **deployed to AWS** (13 resources, $0/month). See [ROADMAP.md](docs/ROADMAP.md) for the build plan and [networking.md](docs/networking.md) for the live resource IDs.
+> 🚧 **Status:** Phase 4 complete — VPC network (Phase 3, standing, $0/month) is deployed; a backend EC2 instance (Phase 4, SSM-only access, zero inbound security group rules, no SSH) was deployed, validated, and intentionally destroyed for cost control. Current AWS spend: $0/month. See [ROADMAP.md](docs/ROADMAP.md) for the build plan and [deployment.md](docs/deployment.md) for how to redeploy the instance when needed.
 
 ## Why this project exists
 

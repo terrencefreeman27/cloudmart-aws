@@ -39,3 +39,15 @@ variable "private_subnet_cidrs" {
   type        = list(string)
   default     = ["10.0.11.0/24", "10.0.12.0/24"]
 }
+
+variable "instance_type" {
+  description = "EC2 instance type for the backend server. t2.micro is the smallest practical size and the one AWS Free Tier covers in us-east-1 (t3.micro is not Free Tier eligible here)."
+  type        = string
+  default     = "t2.micro"
+}
+
+variable "allowed_demo_cidrs" {
+  description = "CIDRs allowed to reach the backend app port directly. Empty by default — use SSM port forwarding for access instead. Only override via terraform.tfvars (gitignored) or -var; never commit a real IP."
+  type        = list(string)
+  default     = []
+}
