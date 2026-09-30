@@ -7,11 +7,13 @@ export default function App() {
   const [products, setProducts] = useState([]);
   const [cartCount, setCartCount] = useState(0);
   const [status, setStatus] = useState("loading");
+  const [source, setSource] = useState(null);
 
   useEffect(() => {
     fetchProducts()
-      .then((data) => {
-        setProducts(data);
+      .then((result) => {
+        setProducts(result.products);
+        setSource(result.source);
         setStatus("ready");
       })
       .catch(() => setStatus("error"));
@@ -28,13 +30,15 @@ export default function App() {
         <h1>Shop CloudMart</h1>
         <p className="subtitle">A small storefront, built to learn AWS architecture.</p>
 
-        {status === "loading" && <p>Loading products…</p>}
-        {status === "error" && (
-          <p className="error">
-            Couldn't reach the CloudMart API. Is the backend running on the configured
-            VITE_API_BASE_URL?
+        {source === "static" && (
+          <p className="demo-banner" role="status">
+            <strong>Demo mode</strong> — static catalog. The API tier is designed but not
+            deployed to keep costs at $0.
           </p>
         )}
+
+        {status === "loading" && <p>Loading products…</p>}
+        {status === "error" && <p className="error">Couldn't load the product catalog.</p>}
         {status === "ready" && <ProductGrid products={products} onAddToCart={handleAddToCart} />}
       </main>
     </div>

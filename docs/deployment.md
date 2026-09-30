@@ -95,7 +95,7 @@ aws cloudfront create-invalidation --profile cloudmart \
   --paths "/*"
 ```
 
-The site is live at `terraform output frontend_url` (an `https://*.cloudfront.net` address — no custom domain this phase). Step 3 uploads directly via the AWS CLI's own credentials, not through the private bucket's CloudFront-only read path — that path is for *serving* the site to visitors, not for deploying to it. Note that `VITE_API_BASE_URL` in the current build still points at `localhost:4000` (Phase 5's backend isn't deployed) — the frontend shell and static routing work fully over HTTPS, but API calls won't succeed until Phase 5 is deployed and the frontend is rebuilt/redeployed pointing at the real ALB DNS name.
+The site is live at `terraform output frontend_url` (an `https://*.cloudfront.net` address — no custom domain this phase). Step 3 uploads directly via the AWS CLI's own credentials, not through the private bucket's CloudFront-only read path — that path is for *serving* the site to visitors, not for deploying to it. Phase 5's backend isn't deployed, so there is no real API URL to build with. A production build treats an unset or `localhost` `VITE_API_BASE_URL` as "no API": it skips the request and serves a static copy of the catalog (the backend's own `backend/src/data/products.js`, bundled as a separate chunk) with a "Demo mode" banner. If a real URL is configured but the request fails, it falls back the same way. Once Phase 5 is deployed, rebuild with `VITE_API_BASE_URL` set to the ALB's DNS name and redeploy; the banner disappears when the API responds.
 
 ## Deploying monitoring (Phase 8 design) — not currently deployed
 

@@ -16,7 +16,7 @@ Phase 4 needed to run the Express backend on EC2. Three placements were consider
 - Instance role is scoped to exactly the `AmazonSSMManagedInstanceCore` managed policy — nothing else.
 
 ## Alternatives considered
-- **Private subnet + ALB + NAT (the "real" production pattern):** rejected for this phase specifically because it was explicitly out of budget (~$50-60/mo minimum for NAT + ALB) and the ALB itself is excluded from this phase's scope. This is what Phase 5 builds.
+- **Private subnet + ALB + NAT (the "real" production pattern):** rejected for this phase specifically because it was explicitly out of budget (~$50-60/mo minimum for NAT + ALB) and the ALB itself is excluded from this phase's scope. Phase 5 later added the ALB and Auto Scaling Group, but still **without** a NAT Gateway — its instances stay in the public subnets, locked to ALB-only inbound (see [ADR 0007](0007-phase5-alb-asg-plan-not-deployed.md)). Private subnets + NAT remains the production upgrade, not something this project builds.
 - **Private subnet, no NAT:** rejected as impractical for a phase that needs to actually be reachable and updatable — with no NAT and no paid Interface VPC Endpoints, there's no path in or out at all beyond S3-reachable services, which doesn't fit a Node/Express app that needs `npm install` and needs to be demoed.
 - **Public subnet + SSH + security group open to `0.0.0.0/0` on the app port (the "typical tutorial" version of option 1):** rejected after the first design pass — the user asked explicitly for the backend not to be permanently exposed. Revised to the SSM-only, zero-inbound-rule design in this ADR.
 

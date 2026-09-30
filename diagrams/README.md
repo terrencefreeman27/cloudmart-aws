@@ -11,5 +11,6 @@ The final CloudMart target architecture — diagram-as-code in [Mermaid](https:/
 npx -y @mermaid-js/mermaid-cli \
   -i diagrams/cloudmart-architecture.mmd \
   -o diagrams/cloudmart-architecture.png \
-  -b white -w 1600
+  -b white --size 1600
 ```
+(`--size` replaced the older `-w` flag in mermaid-cli v12; the last render used v12.0.0.)

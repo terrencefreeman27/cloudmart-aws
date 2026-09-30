@@ -6,7 +6,9 @@ CloudMart is a small e-commerce app used as the vehicle for a full, production-s
 
 **[https://d3u41r8pyeqew9.cloudfront.net](https://d3u41r8pyeqew9.cloudfront.net)** — the React frontend, served from a private S3 bucket through CloudFront (HTTPS, edge-cached, SPA routing supported).
 
-This is the frontend shell only. The backend API (Phase 5) is intentionally not deployed — see [Cost Optimization](#cost-optimization) below — so product data won't load; the page itself, its routing, and its HTTPS/caching behavior are all live and real.
+The backend API (Phase 5) is intentionally not deployed — see [Cost Optimization](#cost-optimization) below. Instead of an error, the frontend falls back to a static copy of the product catalog bundled into the build (the same `backend/src/data/products.js` file the API serves, not a duplicate) and shows a small **"Demo mode"** banner saying so. The page itself, its routing, and its HTTPS/caching behavior are all live and real; the product data is static until the API tier is deployed. In local development (`npm run dev`) with the backend running, the frontend uses the real API and the banner doesn't appear.
+
+> The demo-mode fallback takes effect on the next frontend deploy (build → `aws s3 sync` → CloudFront invalidation, see [docs/deployment.md](docs/deployment.md)). Until then, the live site still shows the older "Couldn't reach the CloudMart API" message.
 
 ## Architecture
 
@@ -23,15 +25,15 @@ flowchart TB
         IGW(["Internet Gateway<br/><b>[DEPLOYED]</b>"])
         ALB["Application Load Balancer<br/>spans 2 PUBLIC subnets (1/AZ)<br/><b>[PLAN-VALIDATED]</b>"]
 
-        subgraph AZA["Availability Zone A — PRIVATE subnet"]
-            EC2A["EC2 backend<br/>(ASG member)<br/><b>[PLAN-VALIDATED]</b>"]
+        subgraph AZA["Availability Zone A — PUBLIC subnet"]
+            EC2A["EC2 backend<br/>(ASG member)<br/>public IP, egress via IGW<br/>no inbound except ALB SG<br/><b>[PLAN-VALIDATED]</b>"]
         end
-        subgraph AZB["Availability Zone B — PRIVATE subnet"]
-            EC2B["EC2 backend<br/>(ASG member)<br/><b>[PLAN-VALIDATED]</b>"]
+        subgraph AZB["Availability Zone B — PUBLIC subnet"]
+            EC2B["EC2 backend<br/>(ASG member)<br/>public IP, egress via IGW<br/>no inbound except ALB SG<br/><b>[PLAN-VALIDATED]</b>"]
         end
 
         ASG{{"Auto Scaling Group<br/>+ Launch Template<br/><b>[PLAN-VALIDATED]</b>"}}
-        RDS[("RDS PostgreSQL<br/>private subnets<br/><b>[PLAN-VALIDATED]</b>")]
+        RDS[("RDS PostgreSQL<br/>PRIVATE subnets (both AZs)<br/>not publicly accessible<br/><b>[PLAN-VALIDATED]</b>")]
         P4["Phase 4 history:<br/>single EC2 instance<br/><b>[VALIDATED, DESTROYED]</b><br/>SSM-verified /api/health,<br/>/api/products — superseded<br/>by the ASG design above"]
 
         IGW --> ALB
@@ -74,7 +76,7 @@ Status is shown as an explicit label on every node (`[DEPLOYED]` / `[PLAN-VALIDA
 ## Architecture Highlights
 
 - **Multi-AZ networking** — one VPC spanning two Availability Zones from the start, public and private subnets in each, so nothing had to be redesigned when compute and data tiers were added later.
-- **Public/private subnet separation** — only the ALB (when deployed) sits in public subnets; the backend and database are designed to live in private subnets with no direct route to the internet.
+- **Public/private subnet separation, with an honest cost trade-off** — the database is designed for private subnets with no route to the internet. The backend EC2 instances are designed for the *public* subnets (alongside the ALB), because the VPC deliberately has no NAT Gateway (~$32+/month each) and the instances need outbound internet for `npm install`, `git clone`, and SSM. They get a public IP but accept **no inbound traffic except the app port from the ALB's security group** — no SSH, no CIDR-based rule. Moving them into the private subnets behind a NAT Gateway (or VPC endpoints) is the documented production upgrade — see [ADR 0007](docs/decisions/0007-phase5-alb-asg-plan-not-deployed.md).
 - **S3 + CloudFront frontend** — the React build lives in a fully private S3 bucket; CloudFront is the only reader, via Origin Access Control, and is the only public entry point for static content.
 - **ALB + Auto Scaling production design** — a load balancer and Auto Scaling Group across both AZs, with ELB-based health checks so a failed instance is detected and replaced automatically, no manual intervention.
 - **Private RDS tier** — PostgreSQL with no public accessibility, reachable only from the backend's security group, encrypted at rest, with a master password AWS generates and manages via Secrets Manager (never handled directly, never in Terraform state).
@@ -91,7 +93,7 @@ Status is shown as an explicit label on every node (`[DEPLOYED]` / `[PLAN-VALIDA
 | S3 (private) + CloudFront + OAC + HTTPS + SPA routing | ✅ **Deployed** | Live frontend, usage-based cost, no idle charge |
 | Single EC2 backend + SSM + IAM role (no SSH, no public port 4000) | 🟠 **Validated, then destroyed** | Verified `/api/health` and `/api/products` over an SSM tunnel, then torn down for cost control; superseded by the ASG design below |
 | Application Load Balancer + Target Group | 🟡 **Plan-validated only** | `terraform plan` confirms correctness; never applied |
-| Auto Scaling Group + Launch Template (multi-AZ EC2) | 🟡 **Plan-validated only** | Backend security group accepts the app port only from the ALB's security group |
+| Auto Scaling Group + Launch Template (multi-AZ EC2) | 🟡 **Plan-validated only** | Instances in the public subnets (no NAT Gateway); backend security group accepts the app port only from the ALB's security group |
 | RDS PostgreSQL (private subnets, encrypted, Secrets Manager) | 🟡 **Plan-validated only** | Single-AZ by default; Multi-AZ is a documented, one-variable upgrade |
 | CloudWatch monitoring + SNS | 🟡 **Mostly plan-validated** | 1 alarm (CloudFront 5xx) is `plan`-verified and ready to deploy at ~$0/month; 8 more (ALB/ASG/RDS) are designed but inert |
 
@@ -102,9 +104,9 @@ VPC · Subnets · Internet Gateway · Route Tables · Security Groups · EC2 · 
 ## Security
 
 - **Private S3 + OAC**: the frontend bucket has all four S3 Block Public Access settings enabled; the only reader is CloudFront, via Origin Access Control, scoped to this exact distribution's ARN — not "any CloudFront distribution."
-- **HTTPS everywhere it's live**: CloudFront enforces `redirect-to-https` on every viewer connection today; the ALB design does the same for the API once deployed.
+- **HTTPS on everything that's live**: CloudFront enforces `redirect-to-https` on every viewer connection today. The plan-validated ALB design has only an **HTTP :80 listener** — an HTTPS listener needs an ACM certificate, which needs a custom domain this project doesn't have. Adding a custom domain, an ACM certificate, and an HTTPS :443 listener (with HTTP redirected to it) is a listed production upgrade, not something this design does today.
 - **SSM instead of SSH**: no key pairs, no port 22, anywhere in this project — IAM-gated shell/tunnel access only.
-- **Security-group chaining**: ALB → backend → database, each hop trusting the *previous security group by reference*, never a CIDR block — so the rule stays correct automatically as instances are replaced.
+- **Security-group chaining**: ALB → backend → database, each hop trusting the *previous security group by reference*, never a CIDR block — so the rule stays correct automatically as instances are replaced. This is also what keeps the public-subnet backend instances unreachable from the internet: their only inbound rule is the app port from the ALB's security group.
 - **Private RDS**: `publicly_accessible = false`, reachable only from the backend's security group, and the database's own security group has zero egress rules (it never needs to initiate outbound connections).
 - **Encryption at rest**: S3 (SSE-S3) and the RDS design (`storage_encrypted = true`, which can only be set at creation, not retrofitted).
 - **Secrets Manager design**: the RDS master password is generated and owned entirely by AWS (`manage_master_user_password = true`) — it never appears in Terraform code, state, or this repo.
@@ -125,7 +127,7 @@ Full failure-scenario and RTO/RPO analysis: [docs/architecture.md](docs/architec
 
 ## Cost Optimization
 
-- **No NAT Gateway, anywhere in this project's Terraform** — it has a real hourly charge (~$32+/month) and nothing currently needs outbound internet access from a private subnet.
+- **No NAT Gateway, anywhere in this project's Terraform** — it has a real hourly charge (~$32+/month per gateway). The trade-off: the backend instance design sits in the public subnets and uses its own public IP for outbound traffic (locked down to ALB-only inbound), and only the database, which never needs outbound internet, uses the private subnets.
 - **The Phase 4 EC2 validation was destroyed the same day it was proven** — deploy, verify, tear down is the deliberate pattern for anything with a real per-hour cost, not "leave it running to be safe."
 - **ALB, ASG, and RDS remain plan-validated, not standing** — each is fully designed and `terraform plan`-verified (proving correctness without spending anything), but left undeployed because their combined cost if left running (~$48.57/month for Phase 5, ~$15.84-31.28/month for Phase 6) wasn't judged worth paying for a portfolio project with no real traffic.
 - **S3 + CloudFront was chosen for the public demo specifically because it has no idle/base charge** — unlike EC2, ALB, RDS, and NAT Gateway, cost is 100% usage-based, so a live, always-on public demo link costs effectively $0/month at near-zero traffic.
@@ -178,7 +180,7 @@ Full index: [docs/decisions/](docs/decisions/).
 - **Cost-aware architecture as a design constraint, not an afterthought** — every resource with a real hourly charge went through the same explicit lifecycle: designed, `plan`-verified, and either time-boxed-and-destroyed or left deliberately undeployed pending approval.
 - **Terraform state management realities** — local state, targeted applies, stale outputs from resources removed out of config but never reconciled (fixed with a `-refresh-only` apply, which is provably incapable of touching real infrastructure) — the kind of operational detail that only shows up from actually running Terraform repeatedly, not from reading about it.
 - **Secure instance administration without SSH** — SSM Session Manager end-to-end, including the operational discovery that its CLI plugin isn't bundled with the AWS CLI and needed a `sudo`-free manual install.
-- **Production vs. portfolio trade-offs, named explicitly rather than hidden** — Single-AZ RDS, no custom domain, no CI/CD, local Terraform state: every one of these is a deliberate, documented choice for this project's scope and budget, with the production alternative written down alongside it, not glossed over.
+- **Production vs. portfolio trade-offs, named explicitly rather than hidden** — Single-AZ RDS, backend instances in public subnets instead of private-plus-NAT, no custom domain (so no HTTPS on the ALB), no CI/CD, local Terraform state: every one of these is a deliberate, documented choice for this project's scope and budget, with the production alternative written down alongside it, not glossed over.
 
 ## Running Locally
 
